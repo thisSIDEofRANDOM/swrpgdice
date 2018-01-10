@@ -1,6 +1,7 @@
 # swrpgdice
 Bash dice roller for Fantasy Flight Games Star Wars RPG
 
+```
 Usage: swdice.sh [#][bBsSaAdDpPcCfF] [vV] [mM] [hH]
  Options:
    bB   Boost Die (Blue)
@@ -19,3 +20,4 @@ Usage: swdice.sh [#][bBsSaAdDpPcCfF] [vV] [mM] [hH]
    You can declare multiple dice by specifying them multiple times in the argument
       Example: 2a3pbb2sv
       Absurd Example: b ff 2vsa 4 c2bf17 1v
+```
