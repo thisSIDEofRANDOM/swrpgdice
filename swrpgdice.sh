@@ -52,7 +52,7 @@ _BLANK=0
 # Help Function
 print_help() {
   echo "Usage: ${FULL_NAME} [#][bBsSaAdDpPcCfF] [vV] [mM] [hH]"
-  grep -E '^#~' $0|sed -e 's/^#~//'
+  sed -ne 's/^#~//p' ${0}
 }
 
 # Default rolls a d6 if no side passed
@@ -75,15 +75,15 @@ print_map() {
 # Verbose counts for rolls
 print_verbose() {
   echo "Totals"
-  echo "Succes: $_SUCCESS"
-  echo "Failure: $_FAILURE"
-  echo "Advantage: $_ADVANTAGE"
-  echo "Threat: $_THREAT"
-  echo "Triumph: $_TRIUMPH"
-  echo "Depair: $_DESPAIR"
-  echo "Lightside: $_LIGHTSIDE"
-  echo "Darkside: $_DARKSIDE"
-  echo "Blank: $_BLANK"
+  echo "Succes: ${_SUCCESS}"
+  echo "Failure: ${_FAILURE}"
+  echo "Advantage: ${_ADVANTAGE}"
+  echo "Threat: ${_THREAT}"
+  echo "Triumph: ${_TRIUMPH}"
+  echo "Depair: ${_DESPAIR}"
+  echo "Lightside: ${_LIGHTSIDE}"
+  echo "Darkside: ${_DARKSIDE}"
+  echo "Blank: ${_BLANK}"
 }
 
 # Main result function, handles game logic
@@ -93,70 +93,73 @@ print_results() {
   local AT=$((_ADVANTAGE-_THREAT))
 
   # Success/Failure
-  if [[ $SF -le 0 ]]; then
+  if [[ ${SF} -le 0 ]]; then
     echo -n "Failed roll by: ${SF#-} "
-  elif [[ $SF -gt 0 ]]; then
+  elif [[ ${SF} -gt 0 ]]; then
     echo -n "Succeeded roll by: ${SF} "
   fi
   
   # Advantage/Threat
-  if [[ $AT -lt 0 ]]; then
+  if [[ ${AT} -lt 0 ]]; then
     echo "with ${AT#-} threat"
-  elif [[ $AT -gt 0 ]]; then
+  elif [[ ${AT} -gt 0 ]]; then
     echo "with ${AT} advantage"
   else
     echo
   fi
 
   # Trimphs
-  if [[ $_TRIUMPH -gt 0 ]]; then echo "Rolled ${_TRIUMPH} Triumph!"; fi
+  if [[ ${_TRIUMPH} -gt 0 ]]; then echo "Rolled ${_TRIUMPH} Triumph!"; fi
 
   # Despairs
-  if [[ $_DESPAIR -gt 0 ]]; then echo "Rolled ${_DESPAIR} Despair!"; fi
+  if [[ ${_DESPAIR} -gt 0 ]]; then echo "Rolled ${_DESPAIR} Despair!"; fi
 
   # Light side pips
-  if [[ $_LIGHTSIDE -gt 0 ]]; then echo "Rolled ${_LIGHTSIDE} light side points"; fi
+  if [[ ${_LIGHTSIDE} -gt 0 ]]; then echo "Rolled ${_LIGHTSIDE} light side points"; fi
 
   # Dark side pips
-  if [[ $_DARKSIDE -gt 0 ]]; then echo "Rolled ${_DARKSIDE} dark side points"; fi
+  if [[ ${_DARKSIDE} -gt 0 ]]; then echo "Rolled ${_DARKSIDE} dark side points"; fi
 }
 
 # Check for an argument or print usage
-if [ $# -lt 1 ] || [[ $@ =~ [hH] ]]; then
+if [ ${#} -lt 1 ] || [[ ${@} =~ [hH] ]]; then
   print_help
   exit
 fi  
 
 # Check for verbose switch
-if [[ $@ =~ [vV] ]]; then _VERBOSE=1; fi
+if [[ ${@} =~ [vV] ]]; then _VERBOSE=1; fi
 
 # Check for map switch
-if [[ $@ =~ [mM] ]]; then print_map; echo;fi
+if [[ ${@} =~ [mM] ]]; then print_map; echo;fi
 
 # Main 
 # Convert arguments for parsing. Order shouldn't matter
 for arg in $(sed 's/\([a-zA-Z]\)/&\n/g; s/\([0-9]\+\)/&\n/g' <<< ${@// /}); do
 
-  # If verbose/map flag, move to next argument
-  if [[ $arg == [vVmM] ]]; then ((_VERBOSE++)); continue; fi
+  # If verbose flag, move to next argument
+  if [[ ${arg} == [vV] ]]; then ((_VERBOSE++)); continue; fi
+
+  # If map flag, move to next argument
+  if [[ ${arg} == [mM] ]]; then continue; fi
 
   # If arg is a number set to number of dice for next die
-  if [[ $arg =~ ^[0-9]+$ ]]; then
+  if [[ ${arg} =~ ^[0-9]+$ ]]; then
     NUMDICE=${arg}
     continue
   # If no number of die then assume one
-  elif [[ ! $NUMDICE ]]; then
+  elif [[ ! ${NUMDICE} ]]; then
     NUMDICE=1
   fi
 
   # Exit if we encounter an unknown dice type
-  if [[ $arg != [bBsSaAdDpPcCfF] ]]; then
-    echo -e "Encountered unknown argument in equation: $arg\n"
+  if [[ ${arg} != [bBsSaAdDpPcCfF] ]]; then
+    echo -e "Encountered unknown argument in equation: ${arg}\n"
     print_help
     exit
   fi
 
-  while [[ $NUMDICE -gt 0 ]]; do
+  while [[ ${NUMDICE} -gt 0 ]]; do
     # Set dynamic array name for indirection. Converts to lowercase
     DICE="${arg,}_array"
   
@@ -184,6 +187,6 @@ for arg in $(sed 's/\([a-zA-Z]\)/&\n/g; s/\([0-9]\+\)/&\n/g' <<< ${@// /}); do
 done
 
 # Print final results
-if [[ _VERBOSE -gt 1 ]]; then echo; if [[ _VERBOSE -gt 2 ]]; then print_verbose; echo; fi; fi
+if [[ ${_VERBOSE} -gt 1 ]]; then echo; if [[ ${_VERBOSE} -gt 2 ]]; then print_verbose; echo; fi; fi
 
 print_results
