@@ -131,7 +131,7 @@ fi
 if [[ ${@} =~ [vV] ]]; then _VERBOSE=1; fi
 
 # Check for map switch
-if [[ ${@} =~ [mM] ]]; then print_map; echo;fi
+if [[ ${@} =~ [mM] ]]; then print_map; echo; fi
 
 # Main 
 # Convert arguments for parsing. Order shouldn't matter
