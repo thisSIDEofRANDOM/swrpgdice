@@ -75,7 +75,7 @@ print_map() {
 # Verbose counts for rolls
 print_verbose() {
   echo "Totals"
-  echo "Succes: ${_SUCCESS}"
+  echo "Success: ${_SUCCESS}"
   echo "Failure: ${_FAILURE}"
   echo "Advantage: ${_ADVANTAGE}"
   echo "Threat: ${_THREAT}"
