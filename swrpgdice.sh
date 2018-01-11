@@ -57,7 +57,7 @@ print_help() {
 
 # Default rolls a d6 if no side passed
 roll_dice() {
-  echo $(((RANDOM % ${1:-6})+1))
+  echo $(((${RANDOM} % ${1:-6})+1))
 }
 
 # Print dice map table
@@ -167,7 +167,7 @@ for arg in $(sed 's/\([a-zA-Z]\)/&\n/g; s/\([0-9]\+\)/&\n/g' <<< ${@// /}); do
     if [[ ${_VERBOSE} -gt 0 ]]; then echo -n "Rolling ${DICE:0:1} dice > "; fi
     
     # Set our result after the role for further indirection calls
-    DICE="$DICE[$(roll_dice ${!DICE[0]})]"
+    DICE="${DICE}[$(roll_dice ${!DICE[0]})]"
 
     # Debug Line
     if [[ ${_VERBOSE} -gt 0 ]]; then echo "Rolled: ${DICE:7} mapping to > ${!DICE//_/}"; fi
@@ -176,7 +176,7 @@ for arg in $(sed 's/\([a-zA-Z]\)/&\n/g; s/\([0-9]\+\)/&\n/g' <<< ${@// /}); do
     (( ${!DICE} ))
 
     # Subtract from dice left to role
-    (( NUMDICE-- ))
+    ((NUMDICE--))
 
     # Cleanup dice
     unset DICE
