@@ -51,6 +51,7 @@ Rolled 1 Despair!
 Rolled 1 dark side points
 ```
 ## Dice Map
+![DiceMap](https://i.warosu.org/data/tg/img/0396/47/1430327598908.png)
 ```
 bash swrpgdice.sh m
 Dice Tables
