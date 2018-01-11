@@ -186,7 +186,8 @@ for arg in $(sed 's/\([a-zA-Z]\)/&\n/g; s/\([0-9]\+\)/&\n/g' <<< ${@// /}); do
   unset NUMDICE
 done
 
-# Print final results
+# Check for verbosity flags and format accordingly
 if [[ ${_VERBOSE} -gt 1 ]]; then echo; if [[ ${_VERBOSE} -gt 2 ]]; then print_verbose; echo; fi; fi
 
+# Print final results
 print_results
