@@ -173,7 +173,7 @@ for arg in $(sed 's/\([a-zA-Z]\)/&\n/g; s/\([0-9]\+\)/&\n/g' <<< ${@// /}); do
     if [[ ${_VERBOSE} -gt 0 ]]; then echo "Rolled: ${DICE:7} mapping to > ${!DICE//_/}"; fi
 
     # Process roll actions from array return indirectly
-    (( ${!DICE} ))
+    ((${!DICE}))
 
     # Subtract from dice left to role
     ((NUMDICE--))
