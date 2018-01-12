@@ -25,24 +25,10 @@
 # General Globals
 _VERSION=0.1
 _VERBOSE=0
-FULL_NAME=$(basename $0)
 
-# Global Dice Arrays
-# This is the FFG "Role Map"
-# Element 0 is the number of sides on the dice, the other lements contain the math for the symbols that come up
-b_array=("6" "_BLANK+=1" "_BLANK+=1" "_SUCCESS+=1" "_SUCCESS+=1,_ADVANTAGE+=1" "_ADVANTAGE+=2" "_ADVANTAGE+=1")
-s_array=("6" "_BLANK+=1" "_BLANK+=1" "_FAILURE+=1" "_FAILURE+=1" "_THREAT+=1" "_THREAT+=1")
-a_array=("8" "_BLANK+=1" "_SUCCESS+=1" "_SUCCESS+=1" "_SUCCESS+=2" "_ADVANTAGE+=1" "_ADVANTAGE+=1" "_SUCCESS+=1,_ADVANTAGE+=1" "_ADVANTAGE+=2")
-d_array=("8" "_BLANK+=1" "_FAILURE+=1" "_FAILURE+=2" "_THREAT+=1" "_THREAT+=1" "_THREAT+=1" "_THREAT+=2" "_FAILURE+=1,_THREAT+=1")
-p_array=("12" "_BLANK+=1" "_SUCCESS+=1" "_SUCCESS+=1" "_SUCCESS+=2" "_SUCCESS+=2" "_ADVANTAGE+=1" "_SUCCESS+=1,_ADVANTAGE+=1" "_SUCCESS+=1,_ADVANTAGE+=1" "_SUCCESS+=1,_ADVANTAGE+=1" "_ADVANTAGE+=2" "_ADVANTAGE+=2" "_SUCCESS+=1,_TRIUMPH+=1")
-c_array=("12" "_BLANK+=1" "_FAILURE+=1" "_FAILURE+=1" "_FAILURE+=2" "_FAILURE+=2" "_THREAT+=1" "_THREAT+=1" "_FAILURE+=1,_THREAT+=1" "_FAILURE+=1,_THREAT+=1" "_THREAT+=2" "_THREAT+=2" "_FAILURE+=1,_DESPAIR+=1")
-f_array=("12" "_DARKSIDE+=1" "_DARKSIDE+=1" "_DARKSIDE+=1" "_DARKSIDE+=1" "_DARKSIDE+=1" "_DARKSIDE+=1" "_DARKSIDE+=2" "_LIGHTSIDE+=1" "_LIGHTSIDE+=1" "_LIGHTSIDE+=2" "_LIGHTSIDE+=2" "_LIGHTSIDE+=2")
-
-# Global Totals
+# Initialize die totals
 _SUCCESS=0
-_FAILURE=0	
 _ADVANTAGE=0
-_THREAT=0
 _TRIUMPH=0
 _DESPAIR=0
 _LIGHTSIDE=0
@@ -50,144 +36,339 @@ _DARKSIDE=0
 _BLANK=0
 
 # Help Function
-print_help() {
+function usage() {
   echo "Usage: ${FULL_NAME} [#][bBsSaAdDpPcCfF] [vV] [mM] [hH]"
   sed -ne 's/^#~//p' ${0}
 }
 
+function debug() {
+  [[ ${_VERBOSE} -le 0 ]] && return
+  echo "DEBUG ($(date +%F_%T.%N)): ${@}"
+}
+
+function error() {
+  echo "${@}" >&2
+}
+
+function colorize() {
+  # Plagiarized the hell out of this function from Mr. Howard:
+  # Src: https://github.com/StafDehat/scripts/blob/master/colors.sh
+  local K R G Y B P C W                  # Colored
+  local EMK EMR EMG EMY EMB EMP EMC EMW  # Bold & colored
+  local NORMAL
+  local color="${1}"
+
+  K="\033[0;30m"    # black
+  R="\033[0;31m"    # red
+  G="\033[0;32m"    # green
+  Y="\033[0;33m"    # yellow
+  B="\033[0;34m"    # blue
+  P="\033[0;35m"    # purple
+  C="\033[0;36m"    # cyan
+  W="\033[0;37m"    # white
+  EMK="\033[1;30m"
+  EMR="\033[1;31m"
+  EMG="\033[1;32m"
+  EMY="\033[1;33m"
+  EMB="\033[1;34m"
+  EMP="\033[1;35m"
+  EMC="\033[1;36m"
+  EMW="\033[1;37m"
+  NORMAL=`tput sgr0 2> /dev/null`
+
+  shift 1
+  case "${color}" in 
+    "black")	echo -e "${K}${@}${NORMAL}";;
+    "red")	echo -e "${R}${@}${NORMAL}";;
+    "green")	echo -e "${G}${@}${NORMAL}";;
+    "yellow")	echo -e "${Y}${@}${NORMAL}";;
+    "blue")	echo -e "${B}${@}${NORMAL}";;
+    "purple")	echo -e "${P}${@}${NORMAL}";;
+    "cyan")	echo -e "${C}${@}${NORMAL}";;
+    "white")	echo -e "${W}${@}${NORMAL}";;
+    "BLACK")	echo -e "${EMK}${@}${NORMAL}";;
+    "RED")	echo -e "${EMR}${@}${NORMAL}";;
+    "GREEN")	echo -e "${EMG}${@}${NORMAL}";;
+    "YELLOW")	echo -e "${EMY}${@}${NORMAL}";;
+    "BLUE")	echo -e "${EMB}${@}${NORMAL}";;
+    "PURPLE")	echo -e "${EMP}${@}${NORMAL}";;
+    "CYAN")	echo -e "${EMC}${@}${NORMAL}";;
+    "WHITE")	echo -e "${EMW}${@}${NORMAL}";;
+    *)          echo "${@}";;
+  esac
+}
+
 # Default rolls a d6 if no side passed
 roll_dice() {
-  echo $(((${RANDOM} % ${1:-6})+1))
+  local numSides="${1:-6}"
+  echo $(( (RANDOM % numSides) + 1 ))
 }
 
 # Print dice map table
 print_map() {
-  echo "Dice Tables"
-  echo "# Boost Dice"; echo ${b_array[@]//_/}
-  echo "# Setback Dice"; echo ${s_array[@]//_/}
-  echo "# Ability Dice"; echo ${a_array[@]//_/}
-  echo "# Difficulty Dice"; echo ${d_array[@]//_/}
-  echo "# Proficiency Dice"; echo ${p_array[@]//_/}
-  echo "# Challenge Dice"; echo ${c_array[@]//_/}
-  echo "# Force Dice"; echo ${f_array[@]//_/}
+  cat <<EOF
+Dice Tables
+$( colorize BLUE   "# Boost Dice:       ${b_array[@]//_/}" )
+$( colorize BLACK  "# Setback Dice:     ${s_array[@]//_/}" )
+$( colorize GREEN  "# Ability Dice:     ${a_array[@]//_/}" )
+$( colorize PURPLE "# Difficulty Dice:  ${d_array[@]//_/}" )
+$( colorize YELLOW "# Proficiency Dice: ${p_array[@]//_/}" )
+$( colorize RED    "# Challenge Dice:   ${c_array[@]//_/}" )
+$( colorize WHITE  "# Force Dice:       ${f_array[@]//_/}" )
+EOF
+  echo
 }
 
 # Verbose counts for rolls
 print_verbose() {
-  echo "Totals"
-  echo "Success: ${_SUCCESS}"
-  echo "Failure: ${_FAILURE}"
-  echo "Advantage: ${_ADVANTAGE}"
-  echo "Threat: ${_THREAT}"
-  echo "Triumph: ${_TRIUMPH}"
-  echo "Depair: ${_DESPAIR}"
-  echo "Lightside: ${_LIGHTSIDE}"
-  echo "Darkside: ${_DARKSIDE}"
-  echo "Blank: ${_BLANK}"
+  cat <<EOF
+Totals
+Success:   ${_SUCCESS}
+Advantage: ${_ADVANTAGE}
+Triumph:   ${_TRIUMPH}
+Despair:   ${_DESPAIR}
+Lightside: ${_LIGHTSIDE}
+Darkside:  ${_DARKSIDE}
+Blank:     ${_BLANK}
+EOF
 }
 
 # Main result function, handles game logic
 print_results() {
-  # Game logic - Failure and Success cancel, Advantage and Threat cancel
-  local SF=$((_SUCCESS-_FAILURE))
-  local AT=$((_ADVANTAGE-_THREAT))
-
+  local str=""
   # Success/Failure
-  if [[ ${SF} -le 0 ]]; then
-    echo -n "Failed roll by: ${SF#-} "
-  elif [[ ${SF} -gt 0 ]]; then
-    echo -n "Succeeded roll by: ${SF} "
+  if [[ ${_SUCCESS} -le 0 ]]; then
+    str="Failed roll by: ${_SUCCESS#-} "
+  elif [[ ${_SUCCESS} -gt 0 ]]; then
+    str="Succeeded roll by: ${_SUCCESS} "
   fi
-  
   # Advantage/Threat
-  if [[ ${AT} -lt 0 ]]; then
-    echo "with ${AT#-} threat"
-  elif [[ ${AT} -gt 0 ]]; then
-    echo "with ${AT} advantage"
-  else
-    echo
+  if [[ ${_ADVANTAGE} -lt 0 ]]; then
+    str+="with ${_ADVANTAGE#-} threat"
+  elif [[ ${_ADVANTAGE} -gt 0 ]]; then
+    str+="with ${_ADVANTAGE} advantage"
   fi
-
-  # Trimphs
-  if [[ ${_TRIUMPH} -gt 0 ]]; then echo "Rolled ${_TRIUMPH} Triumph!"; fi
-
-  # Despairs
-  if [[ ${_DESPAIR} -gt 0 ]]; then echo "Rolled ${_DESPAIR} Despair!"; fi
-
-  # Light side pips
-  if [[ ${_LIGHTSIDE} -gt 0 ]]; then echo "Rolled ${_LIGHTSIDE} light side points"; fi
-
-  # Dark side pips
-  if [[ ${_DARKSIDE} -gt 0 ]]; then echo "Rolled ${_DARKSIDE} dark side points"; fi
+  echo "${str}"
+  [[ ${_TRIUMPH}   -gt 0 ]] && echo "Rolled ${_TRIUMPH} Triumph!"
+  [[ ${_DESPAIR}   -gt 0 ]] && echo "Rolled ${_DESPAIR} Despair!"
+  [[ ${_LIGHTSIDE} -gt 0 ]] && echo "Rolled ${_LIGHTSIDE} light side points"
+  [[ ${_DARKSIDE}  -gt 0 ]] && echo "Rolled ${_DARKSIDE} dark side points"
 }
 
-# Check for an argument or print usage
-if [ ${#} -lt 1 ] || [[ ${@} =~ [hH] ]]; then
-  print_help
-  exit
-fi  
+function roll_boost() {
+  local numDice=${1}
+  local numSides=6
+  local thisRoll=0
+  debug "Rolling ${numDice} ${FUNCNAME#roll_} dice:"
+  for x in $( seq 1 ${numDice} ); do
+    thisRoll=$(roll_dice ${numSides})
+    debug "Just rolled a ${thisRoll} on ${FUNCNAME#roll_} dice"
+    case "${thisRoll}" in
+      1) _BLANK=$((_BLANK+1));;
+      2) _BLANK=$((_BLANK+1));;
+      3) _SUCCESS=$((_SUCCESS+1));;
+      4) _SUCCESS=$((_SUCCESS+1))
+         _ADVANTAGE=$((_ADVANTAGE+1));;
+      5) _ADVANTAGE=$((_ADVANTAGE+2));;
+      6) _ADVANTAGE=$((_ADVANTAGE+1));;
+      *) error "Apparently math is broken."
+         exit 1;;
+    esac
+  done
+}
 
-# Check for verbose switch
-if [[ ${@} =~ [vV] ]]; then _VERBOSE=1; fi
+function roll_setback() {
+  local numDice=${1}
+  local numSides=6
+  debug "Rolling ${numDice} ${FUNCNAME#roll_} dice:"
+  for x in $( seq 1 ${numDice} ); do
+    case "$(roll_dice ${numSides})" in
+      1) _BLANK=$((_BLANK+1));;
+      2) _BLANK=$((_BLANK+1));;
+      3) _SUCCESS=$((_SUCCESS-1));;
+      4) _SUCCESS=$((_SUCCESS-1));;
+      5) _ADVANTAGE=$((_ADVANTAGE-1));;
+      6) _ADVANTAGE=$((_ADVANTAGE-1));;
+      *) error "Apparently math is broken."
+         exit 1;;
+    esac
+  done
+}
 
-# Check for map switch
-if [[ ${@} =~ [mM] ]]; then print_map; echo; fi
+function roll_ability() {
+  local numDice=${1}
+  local numSides=8
+  debug "Rolling ${numDice} ${FUNCNAME#roll_} dice:"
+  for x in $( seq 1 ${numDice} ); do
+    case "$(roll_dice ${numSides})" in
+      1) _BLANK=$((_BLANK+1));;
+      2) _SUCCESS=$((_SUCCESS+1));;
+      3) _SUCCESS=$((_SUCCESS+1));;
+      4) _SUCCESS=$((_SUCCESS+2));;
+      5) _ADVANTAGE=$((_ADVANTAGE+1));;
+      6) _ADVANTAGE=$((_ADVANTAGE+1));;
+      7) _SUCCESS=$((_SUCCESS+1))
+         _ADVANTAGE=$((_ADVANTAGE+1));;
+      8) _ADVANTAGE=$((_ADVANTAGE+2));;
+      *) error "Apparently math is broken."
+         exit 1;;
+    esac
+  done
+}
+
+function roll_difficulty() {
+  local numDice=${1}
+  local numSides=8
+  debug "Rolling ${numDice} ${FUNCNAME#roll_} dice:"
+  for x in $( seq 1 ${numDice} ); do
+    case "$(roll_dice ${numSides})" in
+      1) _BLANK=$((_BLANK+1));;
+      2) _SUCCESS=$((_SUCCESS-1));;
+      3) _SUCCESS=$((_SUCCESS-2));;
+      4) _ADVANTAGE=$((_ADVANTAGE-1));;
+      5) _ADVANTAGE=$((_ADVANTAGE-1));;
+      6) _ADVANTAGE=$((_ADVANTAGE-1));;
+      7) _ADVANTAGE=$((_ADVANTAGE-2));;
+      8) _SUCCESS=$((_SUCCESS-1))
+         _ADVANTAGE=$((_ADVANTAGE+2));;
+      *) error "Apparently math is broken."
+         exit 1;;
+    esac
+  done
+}
+
+function roll_proficiency() {
+  local numDice=${1}
+  local numSides=12
+  debug "Rolling ${numDice} ${FUNCNAME#roll_} dice:"
+  for x in $( seq 1 ${numDice} ); do
+    case "$(roll_dice ${numSides})" in
+      1) _BLANK=$((_BLANK+1));;
+      2) _SUCCESS=$((_SUCCESS+1));;
+      3) _SUCCESS=$((_SUCCESS+1));;
+      4) _SUCCESS=$((_SUCCESS+2));;
+      5) _SUCCESS=$((_SUCCESS+2));;
+      6) _ADVANTAGE=$((_ADVANTAGE+1));;
+      7) _SUCCESS=$((_SUCCESS+1))
+         _ADVANTAGE=$((_ADVANTAGE+1));;
+      8) _SUCCESS=$((_SUCCESS+1))
+         _ADVANTAGE=$((_ADVANTAGE+1));;
+      9) _SUCCESS=$((_SUCCESS+1))
+         _ADVANTAGE=$((_ADVANTAGE+1));;
+      10) _ADVANTAGE=$((_ADVANTAGE+1));;
+      11) _ADVANTAGE=$((_ADVANTAGE+1));;
+      12) _SUCCESS=$((_SUCCESS+1))
+          _TRIUMPH=$((_TRIUMPH+1));;
+      *) error "Apparently math is broken."
+         exit 1;;
+    esac
+  done
+}
+
+function roll_challenge() {
+  local numDice=${1}
+  local numSides=12
+  debug "Rolling ${numDice} ${FUNCNAME#roll_} dice:"
+  for x in $( seq 1 ${numDice} ); do
+    case "$(roll_dice ${numSides})" in
+      1) _BLANK=$((_BLANK+1));;
+      2) _SUCCESS=$((_SUCCESS-1));;
+      3) _SUCCESS=$((_SUCCESS-1));;
+      4) _SUCCESS=$((_SUCCESS-2));;
+      5) _SUCCESS=$((_SUCCESS-2));;
+      6) _ADVANTAGE=$((_ADVANTAGE-1));;
+      7) _ADVANTAGE=$((_ADVANTAGE-1));;
+      8) _SUCCESS=$((_SUCCESS-1))
+         _ADVANTAGE=$((_ADVANTAGE-1));;
+      9) _SUCCESS=$((_SUCCESS-1))
+         _ADVANTAGE=$((_ADVANTAGE-1));;
+      10) _ADVANTAGE=$((_ADVANTAGE-2));;
+      11) _ADVANTAGE=$((_ADVANTAGE-2));;
+      12) _SUCCESS=$((_SUCCESS-1))
+          _DESPAIR=$((_DESPAIR+1));;
+      *) error "Apparently math is broken."
+         exit 1;;
+    esac
+  done
+}
+
+function roll_force() {
+  local numDice=${1}
+  local numSides=12
+  debug "Rolling ${numDice} ${FUNCNAME#roll_} dice:"
+  for x in $( seq 1 ${numDice} ); do
+    case "$(roll_dice ${numSides})" in
+      1-6)   _DARKSIDE=$((_DARKSIDE+1));;
+      7)     _DARKSIDE=$((_DARKSIDE+2));;
+      8-9)   _LIGHTSIDE=$((_LIGHTSIDE+1));;
+      10-12) _LIGHTSIDE=$((_LIGHTSIDE+2));;
+      *) error "Apparently math is broken."
+         exit 1;;
+    esac
+  done
+}
+
+
+# Handle command line arguments
+invalidUsage=false
+while getopts ":vVmMhH" arg; do
+  case ${arg} in
+    h|H) usage
+         exit 0;;
+    m|M) print_map;;
+    v|V) _VERBOSE=$((_VERBOSE+1));;
+    :) output "ERROR: Option -${OPTARG} requires an argument."
+       invalidUsage=true;;
+    *) output "ERROR: Invalid option: -${OPTARG}"
+       invalidUsage=true;;
+  esac
+done #End arguments
+# Shift flags out of arguments, leaving only valid dice notation in $@
+# Ref: https://en.m.wikipedia.org/wiki/Dice_notation
+shift $((${OPTIND} - 1))
+
+# Check for invalid usage
+if ${invalidUsage}; then
+  usage && exit 1
+fi
+
+debug "Args: ${@}"
+args=$( sed 's/\([bsadpcf]\)/\1 /g' <( tr 'A-Z' 'a-z' <<<"$@" ) )
+debug "Args with spaces: ${args}"
 
 # Main 
 # Convert arguments for parsing. Order shouldn't matter
-for arg in $(sed 's/\([a-zA-Z]\)/&\n/g; s/\([0-9]\+\)/&\n/g' <<< ${@// /}); do
-
-  # If verbose flag, move to next argument
-  if [[ ${arg} == [vV] ]]; then ((_VERBOSE++)); continue; fi
-
-  # If map flag, move to next argument
-  if [[ ${arg} == [mM] ]]; then continue; fi
-
-  # If arg is a number set to number of dice for next die
-  if [[ ${arg} =~ ^[0-9]+$ ]]; then
-    NUMDICE=${arg}
-    continue
-  # If no number of die then assume one
-  elif [[ ! ${NUMDICE} ]]; then
-    NUMDICE=1
+for arg in ${args}; do
+  if ! grep -qPi '^\d*[bsadpcf]$' <<<"${arg}"; then
+    error "Encountered unknown argument in equation: ${arg}"
+    usage
+    exit 2
   fi
-
-  # Exit if we encounter an unknown dice type
-  if [[ ${arg} != [bBsSaAdDpPcCfF] ]]; then
-    echo -e "Encountered unknown argument in equation: ${arg}\n"
-    print_help
-    exit
-  fi
-
-  while [[ ${NUMDICE} -gt 0 ]]; do
-    # Set dynamic array name for indirection. Converts to lowercase
-    DICE="${arg,}_array"
-  
-    # Debug Line
-    if [[ ${_VERBOSE} -gt 0 ]]; then echo -n "Rolling ${DICE:0:1} dice > "; fi
-    
-    # Set our result after the role for further indirection calls
-    DICE="${DICE}[$(roll_dice ${!DICE[0]})]"
-
-    # Debug Line
-    if [[ ${_VERBOSE} -gt 0 ]]; then echo "Rolled: ${DICE:7} mapping to > ${!DICE//_/}"; fi
-
-    # Process roll actions from array return indirectly
-    ((${!DICE}))
-
-    # Subtract from dice left to role
-    ((NUMDICE--))
-
-    # Cleanup dice
-    unset DICE
-  done
-
-  # Cleanup Number of dice
-  unset NUMDICE
+  debug "Rolling dice for argument \"${arg}\""
+  NUMDICE=$( grep -oP '\d+' <<<"${arg}" )
+  DIETYPE=$( grep -oPi '[bsadpcf]' <<<"${arg}" )
+  case "${DIETYPE}" in
+    b) roll_boost       "${NUMDICE:-1}";;
+    s) roll_setback     "${NUMDICE:-1}";;
+    a) roll_ability     "${NUMDICE:-1}";;
+    d) roll_difficulty  "${NUMDICE:-1}";;
+    p) roll_proficiency "${NUMDICE:-1}";;
+    c) roll_challenge   "${NUMDICE:-1}";;
+    f) roll_force       "${NUMDICE:-1}";;
+    *) error "That's not true!  That's impossible!"
+       exit 3;;
+  esac
 done
 
 # Check for verbosity flags and format accordingly
-if [[ ${_VERBOSE} -gt 1 ]]; then echo; if [[ ${_VERBOSE} -gt 2 ]]; then print_verbose; echo; fi; fi
+if [[ ${_VERBOSE} -gt 1 ]]; then
+  echo
+  if [[ ${_VERBOSE} -gt 2 ]]; then
+    print_verbose
+    echo
+  fi
+fi
 
 # Print final results
 print_results
+
