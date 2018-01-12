@@ -333,10 +333,12 @@ if ${invalidUsage}; then
 fi
 
 debug "Args: ${@}"
+args=$( sed 's/\([bsadpcf]\)/\1 /g' <( tr 'A-Z' 'a-z' <<<"$@" ) )
+debug "Args with spaces: ${args}"
 
 # Main 
 # Convert arguments for parsing. Order shouldn't matter
-for arg in ${@}; do
+for arg in ${args}; do
   if ! grep -qPi '^\d*[bsadpcf]$' <<<"${arg}"; then
     error "Encountered unknown argument in equation: ${arg}"
     usage
