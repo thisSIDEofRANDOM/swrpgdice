@@ -29,7 +29,7 @@ FULL_NAME=$(basename $0)
 
 # Global Dice Arrays
 # This is the FFG "Role Map"
-# Element 0 is the number of sides on the dice, the other lements contain the math for the symbols that come up
+# Element 0 is the number of sides on the dice, the other elements contain the math for the symbols that come up
 b_array=("6" "_BLANK+=1" "_BLANK+=1" "_SUCCESS+=1" "_SUCCESS+=1,_ADVANTAGE+=1" "_ADVANTAGE+=2" "_ADVANTAGE+=1")
 s_array=("6" "_BLANK+=1" "_BLANK+=1" "_FAILURE+=1" "_FAILURE+=1" "_THREAT+=1" "_THREAT+=1")
 a_array=("8" "_BLANK+=1" "_SUCCESS+=1" "_SUCCESS+=1" "_SUCCESS+=2" "_ADVANTAGE+=1" "_ADVANTAGE+=1" "_SUCCESS+=1,_ADVANTAGE+=1" "_ADVANTAGE+=2")
